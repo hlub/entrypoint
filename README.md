@@ -199,9 +199,15 @@ configuration variables. Hooks and posthooks are run after template redering.
 The only variable for these functions is a dict-like variable space.
 
 
-## Installing inside Docker containers
+## Installing
 
-ToDo.
+Install with pip and git:
+
+```bash
+pip install git+https://github.com/hlub/entrypoint
+```
+
+ToDo: install from release.
 
 
 ## Usage
@@ -263,12 +269,13 @@ and you can run the tests with command `pytest`.
 
 * [Docker and the PID 1 zombie reaping problem (Phusion Blog)](https://blog.phusion.nl/2015/01/20/docker-and-the-pid-1-zombie-reaping-problem/)
 * [Trapping signals in Docker containers (@gchudnov)](https://medium.com/@gchudnov/trapping-signals-in-docker-containers-7a57fdda7d86)
-* [Dump-init written in C](https://github.com/Yelp/dumb-init)
+* [Dump-init init system written in C](https://github.com/Yelp/dumb-init)
 
 
 [daemontools]: http://cr.yp.to/daemontools.html
 [docker-cmd-json]: https://docs.docker.com/engine/reference/builder/#run
 [docker]: https://www.docker.com/
+[kubernetes]: https://kubernetes.io
 [exec]: https://en.wikipedia.org/wiki/Exec_(system_call)
 [gh-releases]: https://github.com/hlub/entrypoint/releases
 [supervisord]: http://supervisord.org/
