@@ -1,3 +1,5 @@
+"""Test terminal-related stuff."""
+
 import os
 import pty
 import re
@@ -78,11 +80,11 @@ def test_child_gets_controlling_tty_if_we_had_one(args):
         output = readall(sfd)
         assert os.waitpid(pid, 0) == (pid, 0), output
 
-        m = re.search(b'flags are: \\[\\[([a-zA-Z]+)\\]\\]\n', output)
-        assert m, output
+        match = re.search(b'flags are: \\[\\[([a-zA-Z]+)\\]\\]\n', output)
+        assert match, output
 
         # "m" is job control
-        flags = m.group(1)
+        flags = match.group(1)
         assert b'm' in flags
 
 

@@ -2,7 +2,7 @@
 
 import sys
 import logging
-from subprocess import PIPE, Popen
+from subprocess import Popen
 from unittest.mock import patch
 from pytest import mark, raises
 import entrypoint

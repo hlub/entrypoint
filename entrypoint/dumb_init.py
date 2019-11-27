@@ -23,46 +23,55 @@ all_signals = {sig.value for sig in signal.Signals if sig < MAX_SIGNAL}
 
 # Map signal numbers to names
 signal_names = dict((sig.value, sig.name) for sig in signal.Signals)
-signal_names[0] = 'NONE'
+signal_names[0] = "NONE"
 
 
 class SignalRewrites(dict):
     """User-specified signal rewrites."""
+
     def _signum(self, sig):
         """Returns integer signal number when given a string or int."""
         if isinstance(sig, str):
             sig = sig.upper()
-            if sig == 'NONE':
+            if sig == "NONE":
                 return 0
-            if not sig.startswith('SIG'):
-                sig = 'SIG' + sig
+            if not sig.startswith("SIG"):
+                sig = "SIG" + sig
             try:
                 return signal.Signals[sig].value
             except KeyError:
-                raise AttributeError('{} is not a signal name'.format(sig))
+                raise AttributeError("{} is not a signal name".format(sig))
         return sig
+
     def translate(self, sig):
         """Apply signal rewrite if specified and returns the corresponding signum."""
         signum = self._signum(sig)
         if signum in self:
-            log.debug('Translating signal %s to %s',
-                      signal_names[signum], signal_names[self[signum]])
+            log.debug(
+                "Translating signal %s to %s",
+                signal_names[signum],
+                signal_names[self[signum]],
+            )
             return self[signum]
         return signum
+
     def set(self, from_sig, to_sig):
         """Set a signal rewrite specified by name or int."""
         self[self._signum(from_sig)] = self._signum(to_sig)
+
     def update(self, updates):
         """Update signal rewrites specified by name or int."""
-        for k,v in updates.items() if isinstance(updates, dict) else updates:
+        for k, v in updates.items() if isinstance(updates, dict) else updates:
             self.set(k, v)
 
 
 class SignalIgnores(set):
     """One-time ignores due to TTY quirks."""
+
     def ignore_next(self, signum):
         """Ignore this signal the next time."""
         self.add(signum)
+
     def is_ignored(self, signum):
         """Test if the specified signal should be ignored this time. Resets the ingore status."""
         if signum in self:
@@ -81,12 +90,17 @@ def forward_signal(signum, child_pid, session_leader):
     if signum != 0:
         try:
             os.kill(-child_pid if session_leader else child_pid, signum)
-            log.debug('Forwarded signal %s to children.', signal_names[signum])
+            log.debug("Forwarded signal %s to children.", signal_names[signum])
         except ProcessLookupError as exc:
-            log.debug('Forwarding signal %s interrupted: %s',
-                      signal_names[signum], exc.strerror)
+            log.debug(
+                "Forwarding signal %s interrupted: %s",
+                signal_names[signum],
+                exc.strerror,
+            )
     else:
-        log.debug("Not forwarding signal %s to children (ignored).", signal_names[signum])
+        log.debug(
+            "Not forwarding signal %s to children (ignored).", signal_names[signum]
+        )
 
 
 def handle_signal(signum, child_pid, session_leader):
@@ -103,7 +117,7 @@ def handle_signal(signum, child_pid, session_leader):
     control them using normal shell job control features (e.g. Ctrl-Z to
     generate a SIGTSTP and suspend the process).
     """
-    log.debug('Received signal %s.', signal_names[signum])
+    log.debug("Received signal %s.", signal_names[signum])
 
     if _temporary_ignores.is_ignored(signum):
         log.debug("Ignoring tty hand-off signal %s", signal_names[signum])
@@ -111,20 +125,26 @@ def handle_signal(signum, child_pid, session_leader):
         while True:
             killed_pid, status = os.waitpid(-1, os.WNOHANG)
             if not killed_pid:
-                break # no more signals waiting
-            if os.WIFEXITED(status): # the process called exit
+                break  # no more signals waiting
+            if os.WIFEXITED(status):  # the process called exit
                 exit_status = os.WEXITSTATUS(status)
-                log.debug("A child with PID %d exited with exit status %d.",
-                          killed_pid, exit_status)
-            else: # terminated by a signal
+                log.debug(
+                    "A child with PID %d exited with exit status %d.",
+                    killed_pid,
+                    exit_status,
+                )
+            else:  # terminated by a signal
                 assert os.WIFSIGNALED(status)
                 exit_status = 128 + os.WTERMSIG(status)
-                log.debug('A child with PID %d was terminated by signal %d.',
-                          killed_pid,
-                          exit_status - 128)
+                log.debug(
+                    "A child with PID %d was terminated by signal %d.",
+                    killed_pid,
+                    exit_status - 128,
+                )
 
             if killed_pid == child_pid:
-                forward_signal(signal.SIGTERM, child_pid, session_leader)  # send SIGTERM to any remaining children
+                # send SIGTERM to any remaining children
+                forward_signal(signal.SIGTERM, child_pid, session_leader)
                 log.debug("Child exited with status %d. Goodbye.", exit_status)
                 sys.exit(exit_status)
 
@@ -142,12 +162,12 @@ def signal_handler_loop(child_pid, session_leader):
             signum = signal.sigwait(all_signals)
             handle_signal(signum, child_pid, session_leader)
     except SystemExit as sys_exit:
-        log.debug('Init process terminates (exit=%d)', sys_exit.code)
+        log.debug("Init process terminates (exit=%d)", sys_exit.code)
         sys.exit(sys_exit.code)
     except:
         log.error("Unexpected exception thrown in signal handling")
         traceback.print_exc()
-        sys.exit(1) # make sure we never return but exit!
+        sys.exit(1)  # make sure we never return but exit!
 
 
 def init(rewrites={}, use_setsid=True):
@@ -185,39 +205,42 @@ def init(rewrites={}, use_setsid=True):
                 # child so that it doesn't receive a SIGHUP and
                 # terminate itself.
                 if os.getsid(0) == os.getpid():
-                    log.debug('Detached from controlling tty, ignoring '
-                              'the first SIGHUP and SIGCONT we receive.')
+                    log.debug(
+                        "Detached from controlling tty, ignoring "
+                        "the first SIGHUP and SIGCONT we receive."
+                    )
                     _temporary_ignores.ignore_next(signal.SIGHUP)
                     _temporary_ignores.ignore_next(signal.SIGCONT)
                 else:
-                    log.debug('Detached from controlling tty, '
-                              'but was not session leader.')
+                    log.debug(
+                        "Detached from controlling tty, " "but was not session leader."
+                    )
             except Exception as exc:
-                log.debug('Unable to detach from controlling tty: %s', str(exc))
+                log.debug("Unable to detach from controlling tty: %s", str(exc))
 
     pid = os.fork()
     if pid < 0:
         raise RuntimeError("Unable to fork.")
-    elif pid == 0: # child process
+    elif pid == 0:  # child process
         # Reset signal blocking
         signal.pthread_sigmask(signal.SIG_SETMASK, originally_blocked)
 
         if use_setsid:
             try:
                 os.setsid()
-                log.debug('System call setsid opened a new session')
+                log.debug("System call setsid opened a new session")
             except Exception as exc:
-                log.error('Unable to setsid: %s. Exiting.', str(exc))
+                log.error("Unable to setsid: %s. Exiting.", str(exc))
                 sys.exit(1)
 
             try:
-                if isatty: # sys.stdout was attached to terminal, reattach
+                if isatty:  # sys.stdout was attached to terminal, reattach
                     fcntl.ioctl(0, termios.TIOCSCTTY, 0)
             except Exception as exc:
                 log.debug("Unable to attach to controlling tty: %s", str(exc))
 
-        return # child initialization is ready
+        return  # child initialization is ready
 
-    else: # parent process
-        log.debug('Child spawned with PID %d', pid)
+    else:  # parent process
+        log.debug("Child spawned with PID %d", pid)
         signal_handler_loop(child_pid=pid, session_leader=use_setsid)

@@ -58,14 +58,14 @@ def print_signals(args=()):
 def child_pids(pid):
     """Return a list of direct child PIDs for the given PID."""
     children = set()
-    for p in LocalPath('/proc').listdir():
+    for path in LocalPath('/proc').listdir():
         try:
-            stat = open(p.join('stat').strpath).read()
-            m = re.match(r'^\d+ \(.+?\) [a-zA-Z] (\d+) ', stat)
-            assert m, stat
-            ppid = int(m.group(1))
+            stat = open(path.join('stat').strpath).read()
+            match = re.match(r'^\d+ \(.+?\) [a-zA-Z] (\d+) ', stat)
+            assert match, stat
+            ppid = int(match.group(1))
             if ppid == pid:
-                children.add(int(p.basename))
+                children.add(int(path.basename))
         except OSError:
             # Happens when the process exits after listing it, or between
             # opening stat and reading it.
@@ -96,24 +96,23 @@ def living_pids(pids):
 def process_state(pid):
     """Return a process' state, such as "stopped" or "running"."""
     status = LocalPath('/proc').join(str(pid), 'status').read()
-    m = re.search(r'^State:\s+[A-Z] \(([a-z]+)\)$', status, re.MULTILINE)
-    return m.group(1)
+    match = re.search(r'^State:\s+[A-Z] \(([a-z]+)\)$', status, re.MULTILINE)
+    return match.group(1)
 
 
-def sleep_until(fn, timeout=1.5):
-    """Sleep until fn succeeds, or we time out."""
+def sleep_until(func, timeout=1.5):
+    """Sleep until func succeeds, or we time out."""
     interval = 0.01
-    so_far = 0
+    start_time = time.time()
     while True:
         try:
-            fn()
+            func()
         except Exception:
-            if so_far >= timeout:
+            if time.time() - start_time >= timeout:
                 raise
         else:
             break
         time.sleep(interval)
-        so_far += interval
 
 
 def kill_if_alive(pid, signum=signal.SIGKILL):

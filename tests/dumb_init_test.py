@@ -3,7 +3,8 @@
 import signal
 from unittest.mock import patch
 from pytest import raises
-from entrypoint.dumb_init import *
+from entrypoint.dumb_init import (SignalRewrites, SignalIgnores, forward_signal,
+                                  handle_signal, init)
 
 def test_rewrites_invalid_names():
     """SignalRewrites raise an error if invalid signal names given."""

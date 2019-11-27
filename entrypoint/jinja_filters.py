@@ -7,6 +7,7 @@ Only functions are collected as filters.
 
 import json
 
+
 def split(value, sep=None, maxsplit=-1):
     return value.split(sep, maxsplit)
 
@@ -55,6 +56,7 @@ def intersect(value, other):
         result = unique(list(filter(lambda x: x in other, value)))
     return result
 
+
 def difference(value, other):
     """Return the difference of the value and the other set
     (i.e. all elements that are in the value set but not the other).
@@ -65,6 +67,7 @@ def difference(value, other):
         result = unique(filter(lambda x: x not in other, value))
     return result
 
+
 def symmetric_difference(value, other):
     """Return the symmetric difference of two sets, value and other.
     (i.e. all elements that are in exactly one of the sets.)
@@ -72,6 +75,7 @@ def symmetric_difference(value, other):
     try:
         result = set(value).symmetric_difference(set(other))
     except TypeError:
-        result = unique(filter(lambda x: x not in intersect(value, other),
-                union(value, other)))
+        result = unique(
+            filter(lambda x: x not in intersect(value, other), union(value, other))
+        )
     return result

@@ -17,13 +17,14 @@ round = _builtins.round
 # Python's zip returns a generator object. in Jinja we want a list:
 zip = lambda *args: list(_builtins.zip(*args))
 
+
 @_contextfunction
 def context(ctx):
     """Return the whole top-level context of the Jinja rendering as a dict.
     This allows iteration over all available data.
     """
     defaults = list(globals().keys()) + list(_defaults.DEFAULT_NAMESPACE.keys())
-    return {k:v for k,v in ctx.items() if k not in defaults}
+    return {k: v for k, v in ctx.items() if k not in defaults}
 
 
 def glob(pattern):

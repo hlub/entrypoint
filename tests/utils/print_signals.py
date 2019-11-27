@@ -23,11 +23,13 @@ signal_queue = Queue()
 
 
 def unbuffered_print(line):
+    """Write line to stdout and flush."""
     sys.stdout.write('{}\n'.format(line))
     sys.stdout.flush()
 
 
 def print_signal(signum, _):
+    """Signal handler to queue the singals."""
     signal_queue.put(signum)
 
 

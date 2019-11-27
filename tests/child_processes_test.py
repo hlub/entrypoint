@@ -4,11 +4,10 @@ import os
 import re
 import signal
 import sys
-from subprocess import PIPE, Popen
 
 import pytest
 
-from .utils import popen_entrypoint, is_alive, kill_if_alive, pid_tree, sleep_until, living_pids
+from .utils import popen_entrypoint, kill_if_alive, pid_tree, sleep_until, living_pids
 
 
 def spawn_and_kill_pipeline(entrypoint_args=()):
