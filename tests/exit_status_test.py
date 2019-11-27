@@ -27,8 +27,6 @@ def test_exit_status_terminated_by_signal(signal):
     """Should exit with status 128 + signal when the child process is
     terminated by a signal.
     """
-    # We use Python because sh is "dash" on Debian and "bash" on others.
-    # https://github.com/Yelp/dumb-init/issues/115
     proc = popen_entrypoint((
         '--', sys.executable, '-c', 'import os; os.kill(os.getpid(), {})'.format(
             signal,

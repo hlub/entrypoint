@@ -25,7 +25,7 @@ should have been destroyed.
 as PID 1 and immediately spawns your command as a child process, taking care to
 properly handle and forward signals as they are received. You can always omit
 this functionality with `entrypoint --no-init --`, which skips all init system
-responsibilities and uses exec to run your actual command after other
+responsibilities and uses [exec][exec] to run your actual command after other
 initializations.
 
 
@@ -104,7 +104,7 @@ With `entrypoint`, you can just write shell scripts with `entrypoint` in the she
     my-other-server  # launch another process in the foreground
 
 Ordinarily, a `SIGTERM` sent to the shell would kill the shell but leave those
-processes running (both the background and foreground!).  With dumb-init, your
+processes running (both the background and foreground!).  With `entrypoint`, your
 subprocesses will receive the same signals your shell does.
 
 If you'd like for signals to only be sent to the direct child, you can run with
@@ -270,7 +270,7 @@ and you can run the tests with command `pytest`.
 [docker-cmd-json]: https://docs.docker.com/engine/reference/builder/#run
 [docker]: https://www.docker.com/
 [exec]: https://en.wikipedia.org/wiki/Exec_(system_call)
-[gh-releases]: https://github.com/Yelp/dumb-init/releases
+[gh-releases]: https://github.com/hlub/entrypoint/releases
 [supervisord]: http://supervisord.org/
 [systemd]: https://wiki.freedesktop.org/www/Software/systemd/
 [sysvinit]: https://wiki.archlinux.org/index.php/SysVinit

@@ -97,9 +97,9 @@ def handle_signal(signum, child_pid, session_leader):
 
     In most cases, simply proxying the received signal is sufficient. If we
     receive a job control signal, however, we should not only forward it, but
-    also sleep dumb-init itself.
+    also sleep the process itself.
 
-    This allows users to run foreground processes using dumb-init and to
+    This allows users to run foreground processes using entrypoint and to
     control them using normal shell job control features (e.g. Ctrl-Z to
     generate a SIGTSTP and suspend the process).
     """
@@ -170,7 +170,7 @@ def init(rewrites={}, use_setsid=True):
     for sig in all_signals - {signal.SIGKILL, signal.SIGSTOP}:
         signal.signal(sig, lambda sig, frame: None)
 
-    # Detach dumb-init from controlling tty, so that the child's session can
+    # Detach from controlling tty, so that the child's session can
     # attach to it instead.
     # We want the child to be able to be the session leader of the TTY so that
     # it can do normal job control.
@@ -182,7 +182,7 @@ def init(rewrites={}, use_setsid=True):
                 # When the session leader detaches from its controlling tty via
                 # TIOCNOTTY, the kernel sends SIGHUP and SIGCONT to the process
                 # group. We need to be careful not to forward these on to the
-                # dumb-init child so that it doesn't receive a SIGHUP and
+                # child so that it doesn't receive a SIGHUP and
                 # terminate itself.
                 if os.getsid(0) == os.getpid():
                     log.debug('Detached from controlling tty, ignoring '
