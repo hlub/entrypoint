@@ -3,6 +3,8 @@
 import os
 import glob
 import logging
+from importlib import util
+
 
 log = logging.getLogger(__name__)
 
@@ -10,10 +12,11 @@ log = logging.getLogger(__name__)
 class Hooks(object):
     """Loader and executor of the entrypoint hooks."""
 
-    def __init__(self, options):
+    def __init__(self, hooks_root):
+        """Load hook modules under the `hooks_root` directory."""
         self._modules = []
         try:
-            hook_path_pattern = os.path.join(options.hooks_root, "*.py")
+            hook_path_pattern = os.path.join(hooks_root, "*.py")
             module_paths = sorted(glob.glob(hook_path_pattern))
             log.debug(
                 "Found %d init hooks with pattern %r.",
@@ -38,8 +41,6 @@ class Hooks(object):
 
     def import_file(self, full_name, path):
         """Import a python module from a path. Python 3.4+ only."""
-        from importlib import util
-
         spec = util.spec_from_file_location(full_name, path)
         mod = util.module_from_spec(spec)
         try:

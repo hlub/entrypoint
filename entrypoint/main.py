@@ -56,8 +56,10 @@ def parse_args(args=None):
     """Parse commandline"""
     parser = argparse.ArgumentParser(
         usage="%(prog)s [OPTIONS] [--] COMMAND [ARGS...]",
-        description="Render a directory hierarchy "
-        "of templates and execute a command.",
+        description="Entrypoint and init for containers: configure via "
+        "environment variables and YAML file; render a directory hierarchy "
+        "of templates; handle responsibilities of an init system; and finally "
+        "execute a command.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -144,21 +146,24 @@ def parse_args(args=None):
     )
     parser.add_argument("command_args", nargs="*", help=argparse.SUPPRESS)
     parser.epilog = """
-        First, variables are read from the YAML file VARIABLES and from the
+        Entrypoint takes the following steps to initiate a container:
+        Variables are read from the YAML file VARIABLES and from the
         environment, the latter overriding the former.
 
         Then, pre-hook functions are called from the hooks directory.
         It is possible to modify the configuration parameters for instance.
 
-        Second, all templates in the TEMPLATES directory are rendered into the
-        OUTPUT directory, maintaining the file hierarchy.(For example,
-        TEMPLATES/some/file.txt will be rendered as OUTPUT/some/file.txt.)
+        All templates in the TEMPLATES directory are rendered into the
+        OUTPUT directory, maintaining the file hierarchy (including ownership
+        and mode). Existing directories are not touched. 
 
-        Then, any post-hook functions in the hooks directory are run.
+        Then, any hook and post-hook functions in the hooks directory are run.
 
-        Finally, the COMMAND is executed. Template variables can also be used in
-        the command and its arguments. Add '--' before the command if any ARGS
-        start with '-'.
+        If everything went without errors, the simple init system takes place
+        (forking and handling session, terminal, signals and children).
+        Finally, the COMMAND is executed. Template variables can also be 
+        used in the command and its arguments. Add '--' before the command 
+        if any ARGS start with '-'.
     """
     return parser.parse_args(args)
 
@@ -224,7 +229,7 @@ def main(args=None):
         root_logger.setLevel(loglevel)
 
         if not os.environ.get("SKIP_ENTRYPOINT"):
-            hooks = Hooks(options)
+            hooks = Hooks(options.hooks_root)
             variables = collect_variables(options)
             hooks.run_prehooks(variables)
             templates.process_templates(

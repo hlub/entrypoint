@@ -184,8 +184,9 @@ can be placed in a YAML configuration, which is then mapped to path
 with `--variables`).
 
 YAML configuration makes it possible to offer a simple configuration
-of containers possibly configuring multiple services (such as barman and cron).
-This encapsulates all configurations most probably of differen forms to
+of containers possibly configuring multiple services (such as: barman and cron; 
+odbc and your service; kerberos and postgresql).
+This encapsulates all configurations, most probably of differen forms, to
 offer a signle containerized service.
 
 
