@@ -1,7 +1,6 @@
 """Test handling of child processes as a whole program"""
 
 import os
-import re
 import signal
 import sys
 
@@ -11,10 +10,10 @@ from .utils import popen_entrypoint, kill_if_alive, pid_tree, sleep_until, livin
 
 
 def spawn_and_kill_pipeline(entrypoint_args=()):
-    proc = popen_entrypoint(entrypoint_args + (
-        '--', 'sh', '-c',
-        "yes 'oh, hi' | tail & yes error | tail >&2",
-    ))
+    proc = popen_entrypoint(
+        entrypoint_args
+        + ("--", "sh", "-c", "yes 'oh, hi' | tail & yes error | tail >&2",)
+    )
 
     def assert_living_pids():
         assert len(living_pids(pid_tree(os.getpid()))) == 6
@@ -43,7 +42,7 @@ def test_no_setsid_doesnt_signal_entire_group():
     """When not running in setsid mode, should only signal its
     immediate child.
     """
-    pids = spawn_and_kill_pipeline(('--no-setsid',))
+    pids = spawn_and_kill_pipeline(("--no-setsid",))
 
     def assert_four_living_pids():
         assert len(living_pids(pids)) == 4
@@ -63,13 +62,15 @@ def spawn_process_which_dies_with_children(entrypoint_args=()):
     anything gets printed onto the stdout pipe.
     """
     proc = popen_entrypoint(
-        entrypoint_args +
-        (
-            '--', 'sh', '-c',
+        entrypoint_args
+        + (
+            "--",
+            "sh",
+            "-c",
             # we need to sleep before the shell exits, or entrypoint might send
             # TERM to print_signals before it has had time to register custom
             # signal handlers
-            '{} -m tests.utils.print_signals & sleep 1'.format(sys.executable)
+            "{} -m tests.utils.print_signals & sleep 1".format(sys.executable),
         )
     )
     proc.wait()
@@ -93,7 +94,7 @@ def test_all_processes_receive_term_on_exit_if_setsid():
     child_pid, child_stdout = spawn_process_which_dies_with_children()
 
     # print_signals should have received TERM
-    assert child_stdout.readline().strip() == 'SIGTERM'
+    assert child_stdout.readline().strip() == "SIGTERM"
 
     os.kill(child_pid, signal.SIGKILL)
 
@@ -102,7 +103,7 @@ def test_processes_dont_receive_term_on_exit_if_no_setsid():
     """If the child exits for some reason, should not send TERM to
     any other processes if setsid mode is disabled.
     """
-    child_pid, child_stdout = spawn_process_which_dies_with_children(('--no-setsid',))
+    child_pid, child_stdout = spawn_process_which_dies_with_children(("--no-setsid",))
 
     # print_signals should not have received TERM; to test this, we send it
     # some other signals and ensure they were received (and TERM wasn't)
@@ -114,14 +115,11 @@ def test_processes_dont_receive_term_on_exit_if_no_setsid():
 
 
 @pytest.mark.parametrize(
-    'args', [
-        ('/doesnotexist',),
-        ('--', '/doesnotexist'),
-    ],
+    "args", [("/doesnotexist",), ("--", "/doesnotexist"),],
 )
 def test_fails_nonzero_with_bad_exec(args):
     """If can't exec as requested, it should exit nonzero."""
     proc = popen_entrypoint(args)
     stdout, stderr = proc.communicate()
     assert proc.returncode != 0
-    assert 'No such file or directory' in stdout + stderr
+    assert "No such file or directory" in stdout + stderr

@@ -10,7 +10,7 @@ import time
 from pytest import mark
 
 
-EOF = b'\x04'
+EOF = b"\x04"
 
 
 def ttyflags(fd):
@@ -25,7 +25,7 @@ def ttyflags(fd):
 
 def readall(fd):
     """read until EOF"""
-    result = b''
+    result = b""
     while True:
         try:
             chunk = os.read(fd, 1 << 10)
@@ -34,7 +34,7 @@ def readall(fd):
                 return result
             else:
                 raise
-        if chunk == b'':
+        if chunk == b"":
             return result
         else:
             result += chunk
@@ -46,21 +46,23 @@ def test_tty():
     """Ensure processes under entrypoint can write successfully, given a tty."""
     pid, fd = pty.fork()
     if pid == 0:
-        os.execvp('python3', ('python3', '-m', 'entrypoint.main', '--quiet', '--', 'tac'))
+        os.execvp(
+            "python3", ("python3", "-m", "entrypoint.main", "--quiet", "--", "tac")
+        )
     else:
         # write to tac via the pty and verify its output
         ttyflags(fd)
-        assert os.write(fd, b'1\n2\n3\n') == 6
+        assert os.write(fd, b"1\n2\n3\n") == 6
         assert os.write(fd, EOF * 2) == 2
         output = readall(fd)
         assert os.waitpid(pid, 0) == (pid, 0)
 
-        assert output == b'3\n2\n1\n', repr(output)
+        assert output == b"3\n2\n1\n", repr(output)
 
 
 @mark.use_execvp
 @mark.use_fork
-@mark.parametrize('args', [('--no-setsid',), ()])
+@mark.parametrize("args", [("--no-setsid",), ()])
 def test_child_gets_controlling_tty_if_we_had_one(args):
     """If entrypoint has a controlling TTY, it should give it to the child.
 
@@ -69,23 +71,26 @@ def test_child_gets_controlling_tty_if_we_had_one(args):
     """
     pid, sfd = pty.fork()
     if pid == 0:
-        os.execvp('python3', ('python3', '-m', 'entrypoint.main') + args + ('--', 'bash', '-m'))
+        os.execvp(
+            "python3",
+            ("python3", "-m", "entrypoint.main") + args + ("--", "bash", "-m"),
+        )
     else:
         ttyflags(sfd)
 
         # We might get lots of extra output from the shell, so print something
         # we can match on easily.
         assert os.write(sfd, b'echo "flags are: [[$-]]"\n') == 25
-        assert os.write(sfd, b'exit 0\n') == 7
+        assert os.write(sfd, b"exit 0\n") == 7
         output = readall(sfd)
         assert os.waitpid(pid, 0) == (pid, 0), output
 
-        match = re.search(b'flags are: \\[\\[([a-zA-Z]+)\\]\\]\n', output)
+        match = re.search(b"flags are: \\[\\[([a-zA-Z]+)\\]\\]\n", output)
         assert match, output
 
         # "m" is job control
         flags = match.group(1)
-        assert b'm' in flags
+        assert b"m" in flags
 
 
 @mark.use_execvp
@@ -99,19 +104,19 @@ def test_sighup_sigcont_ignored_if_was_session_leader():
     itself.
     """
     pid, fd = pty.fork()
-    if pid == 0: # child
-        os.execvp('python3', ('python3', '-m', 'entrypoint.main', '-v', 'sleep', '20'))
-    else: # parent
+    if pid == 0:  # child
+        os.execvp("python3", ("python3", "-m", "entrypoint.main", "-v", "sleep", "20"))
+    else:  # parent
         ttyflags(fd)
 
         # send another SIGCONT to make sure only the first is ignored
         time.sleep(0.5)
         os.kill(pid, signal.SIGHUP)
 
-        output = readall(fd).decode('UTF-8')
+        output = readall(fd).decode("UTF-8")
 
-        assert 'Ignoring tty hand-off signal SIGHUP' in output
-        assert 'Ignoring tty hand-off signal SIGCONT' in output
+        assert "Ignoring tty hand-off signal SIGHUP" in output
+        assert "Ignoring tty hand-off signal SIGCONT" in output
 
-        assert 'Forwarded signal SIGHUP to children' in output
-        assert 'Forwarded signal SIGCONT to children' not in output
+        assert "Forwarded signal SIGHUP to children" in output
+        assert "Forwarded signal SIGCONT to children" not in output

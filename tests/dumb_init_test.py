@@ -3,16 +3,22 @@
 import signal
 from unittest.mock import patch
 from pytest import raises
-from entrypoint.dumb_init import (SignalRewrites, SignalIgnores, forward_signal,
-                                  handle_signal, init)
+from entrypoint.dumb_init import (
+    SignalRewrites,
+    SignalIgnores,
+    forward_signal,
+    handle_signal,
+    init,
+)
+
 
 def test_rewrites_invalid_names():
     """SignalRewrites raise an error if invalid signal names given."""
     rewrites = SignalRewrites()
     with raises(AttributeError):
-        rewrites.set('SIGKILL', 'UNKNOWN')
+        rewrites.set("SIGKILL", "UNKNOWN")
     with raises(AttributeError):
-        rewrites.set('UNKNOWN', 'SIGKILL')
+        rewrites.set("UNKNOWN", "SIGKILL")
 
 
 def test_rewrites_as_default():
@@ -25,8 +31,8 @@ def test_rewrites_as_default():
 def test_rewrites_to_none():
     """Rewrie to signal NONE translates to 0, which can be interpreted as ignored."""
     rewrites = SignalRewrites()
-    rewrites.set('SIGHUP', 'NONE')
-    assert rewrites.translate('SIGHUP') == 0
+    rewrites.set("SIGHUP", "NONE")
+    assert rewrites.translate("SIGHUP") == 0
 
 
 def test_rewrite_signal():
@@ -65,7 +71,7 @@ def test_ignore_signal():
     assert not ignores.is_ignored(signal.SIGCONT)
 
 
-@patch('os.kill')
+@patch("os.kill")
 def test_forward_signal(kill):
     """Signals are forwarded by calling kill."""
     forward_signal(signal.SIGTERM, child_pid=1, session_leader=False)
@@ -74,22 +80,24 @@ def test_forward_signal(kill):
     kill.assert_called_with(-1, signal.SIGTERM)
 
 
-@patch('os.kill')
+@patch("os.kill")
 def test_forward_ignored_signal(kill):
     """Signals ignored by rewriting to none should be ignored."""
-    with patch('entrypoint.dumb_init._signal_rewrites', SignalRewrites()) as signal_rewrites:
-        signal_rewrites.set(signal.SIGTERM, 'NONE')
+    with patch(
+        "entrypoint.dumb_init._signal_rewrites", SignalRewrites()
+    ) as signal_rewrites:
+        signal_rewrites.set(signal.SIGTERM, "NONE")
         forward_signal(signal.SIGTERM, None, False)
         assert not kill.called
 
 
-@patch('os.kill')
-@patch('entrypoint.dumb_init.forward_signal')
+@patch("os.kill")
+@patch("entrypoint.dumb_init.forward_signal")
 def test_handle_signal(forward_signal, kill):
     """Forward other signals than SIGCHLD, which indicates for a child process to be waited."""
     for sig in signal.Signals:
         if sig == signal.SIGCHLD:
-            continue # never forwarded
+            continue  # never forwarded
         forward_signal.reset_mock()
         kill.reset_mock()
         handle_signal(sig.value, None, True)
@@ -100,8 +108,8 @@ def test_handle_signal(forward_signal, kill):
             assert not kill.called
 
 
-@patch('os.kill')
-@patch('os.waitpid')
+@patch("os.kill")
+@patch("os.waitpid")
 def test_handle_children(waitpid, kill):
     """Wait children when signaled so."""
     waitpid.side_effect = [(1, 0), (0, 0)]
@@ -119,20 +127,20 @@ def test_handle_children(waitpid, kill):
     kill.assert_called_with(-1, signal.SIGTERM)
 
 
-@patch('os.fork')
-@patch('entrypoint.dumb_init.signal_handler_loop')
+@patch("os.fork")
+@patch("entrypoint.dumb_init.signal_handler_loop")
 def test_init_parent_runs_signal_hander(signal_handler_loop, fork):
     """Init forks and runs signal handler loop in the parent process."""
-    fork.return_value = 1 # child's pid
+    fork.return_value = 1  # child's pid
     init()
     assert signal_handler_loop.called
 
 
-@patch('os.fork')
-@patch('os.setsid')
+@patch("os.fork")
+@patch("os.setsid")
 def test_init_child_runs_execvp(setsid, fork):
     """Init forks and runs signal handler loop in the parent process."""
-    fork.return_value = 0 # select the child branch after fork
+    fork.return_value = 0  # select the child branch after fork
     init(use_setsid=False)
     assert not setsid.called
     init(use_setsid=True)

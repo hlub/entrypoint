@@ -16,24 +16,21 @@ CATCHABLE_SIGNALS = frozenset(
 )
 
 
-SIGNAL_NAMES = {sig.value:sig.name for sig in signal.Signals}
+SIGNAL_NAMES = {sig.value: sig.name for sig in signal.Signals}
 
 
-signal_queue = Queue()
+def main():
+    signal_queue = Queue()
 
+    def unbuffered_print(line):
+        """Write line to stdout and flush."""
+        sys.stdout.write("{}\n".format(line))
+        sys.stdout.flush()
 
-def unbuffered_print(line):
-    """Write line to stdout and flush."""
-    sys.stdout.write('{}\n'.format(line))
-    sys.stdout.flush()
+    def print_signal(signum, _):
+        """Signal handler to queue the singals."""
+        signal_queue.put(signum)
 
-
-def print_signal(signum, _):
-    """Signal handler to queue the singals."""
-    signal_queue.put(signum)
-
-
-if __name__ == '__main__':
     # set signal handlers
     for signum in CATCHABLE_SIGNALS:
         signal.signal(signum, print_signal)
@@ -47,6 +44,10 @@ if __name__ == '__main__':
         unbuffered_print(SIGNAL_NAMES[signum])
 
         if signum == signal.SIGINT and last_signal == signal.SIGINT:
-            print('Received SIGINT twice, exiting.')
+            print("Received SIGINT twice, exiting.")
             exit(0)
         last_signal = signum
+
+
+if __name__ == "__main__":
+    main()
