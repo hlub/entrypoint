@@ -15,29 +15,29 @@ class Hooks(object):
     def __init__(self, hooks_root):
         """Load hook modules under the `hooks_root` directory."""
         self._modules = []
-        try:
-            hook_path_pattern = os.path.join(hooks_root, "*.py")
-            module_paths = sorted(glob.glob(hook_path_pattern))
-            log.debug(
-                "Found %d init hooks with pattern %r.",
-                len(module_paths),
-                hook_path_pattern,
+        hook_path_pattern = os.path.join(hooks_root, "*.py")
+        module_paths = sorted(glob.glob(hook_path_pattern))
+        log.debug(
+            "Found %d init hooks with pattern %r.",
+            len(module_paths),
+            hook_path_pattern,
+        )
+        for module_path in module_paths:
+            module_name, _ = os.path.splitext(os.path.basename(module_path))
+            log.debug("Loading init hooks %r from %r", module_name, module_path)
+            module = self.import_file(
+                "entrypoint_hook_{}".format(module_name), module_path
             )
-            for module_path in module_paths:
-                module_name, _ = os.path.splitext(os.path.basename(module_path))
-                log.debug("Loading init hooks %r from %r", module_name, module_path)
-                module = self.import_file(
-                    "entrypoint_hook_{}".format(module_name), module_path
-                )
-                # Give an error if there is nothing to call:
-                if not any(map(lambda x: hasattr(module, x), ["prehook", "hook", "posthook"])):
-                    raise RuntimeError(
-                        "Startup script {!r} does not contain any of the hook"
-                        "functions (prehoo, hook, posthook)!".format(module_path)
-                    )
+            # Give an error if there is nothing to call:
+            if self._has_hooks(module):
                 self._modules.append(module)
-        except OSError:
-            pass
+
+    @staticmethod
+    def _has_hooks(module):
+        """Returns true if the module defines any of `prehook`, `hook`
+        and `posthook`.
+        """
+        return any(map(lambda x: hasattr(module, x), ["prehook", "hook", "posthook"]))
 
     def import_file(self, full_name, path):
         """Import a python module from a path. Python 3.4+ only."""
@@ -46,10 +46,7 @@ class Hooks(object):
         try:
             spec.loader.exec_module(mod)
         except Exception as exc:
-            log.critical(
-                "Error while loading init hooks %r from %r!",
-                full_name, path
-            )
+            log.critical("Error while loading init hooks %r from %r!", full_name, path)
             raise exc
         return mod
 
@@ -66,4 +63,4 @@ class Hooks(object):
                 module.hook(variables)
         for mod in self._modules:
             if hasattr(mod, "posthook"):
-                mod.posthook(vars)
+                mod.posthook(variables)
